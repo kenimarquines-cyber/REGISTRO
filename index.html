@@ -106,7 +106,7 @@ async function enviar(d){
     fecha: d.fecha,
     punto: d.punto,
     material: d.material,
-    cantidad: Number(d.cantidad)
+    cantidad: Number(d.cantidad),
     archivoFoto: tieneFoto ? (d.punto+""+d.fecha+""+Date.now()+".jpg").replace(/[^\w.\-]/g,"_") : "",
     fotoBase64: tieneFoto ? d.foto.split(",")[1] : ""
   };
