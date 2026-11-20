@@ -96,13 +96,19 @@ async function cargarCatalogo(){
 /* ---------- Guarda en Tbl_Registros (vía flujo) ---------- */
 async function enviar(d){
 
+  const now = new Date(), p = n=>String(n).padStart(2,"0");
+  const tieneFoto = typeof d.foto === "string" && d.foto.includes(",");
+
   const payload = {
+    fechaRegistro: ${now.getFullYear()}-${p(now.getMonth()+1)}-${p(now.getDate())} ${p(now.getHours())}:${p(now.getMinutes())},
     nombre: d.nombre,
     cargo: d.cargo,
     fecha: d.fecha,
     punto: d.punto,
     material: d.material,
     cantidad: Number(d.cantidad)
+     archivoFoto: tieneFoto ? (d.punto+""+d.fecha+""+Date.now()+".jpg").replace(/[^\w.\-]/g,"_") : "",
+    fotoBase64: tieneFoto ? d.foto.split(",")[1] : ""
   };
 
   console.log(payload);
