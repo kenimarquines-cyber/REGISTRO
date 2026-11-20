@@ -176,29 +176,55 @@ async function reenviarPendientes(){
 $("fecha").valueAsDate = new Date();
 $("form").addEventListener("submit", async e=>{
   e.preventDefault();
-  const btn=$("btn"), msg=$("msg");
-  btn.disabled = true; msg.className=""; msg.textContent="Guardando…";
-  try{
+
+  const btn = $("btn");
+  const msg = $("msg");
+
+  btn.disabled = true;
+  msg.className = "";
+  msg.textContent = "Guardando...";
+
+  try {
+
+    const archivoFoto = $("foto").files[0];
+
     const data = {
-      nombre:$("nombre").value.trim(), cargo:$("cargo").value.trim(), fecha:$("fecha").value,
-      punto:$("punto").value.trim(), material:$("material").value.trim(), cantidad:$("cantidad").value,
+      nombre: $("nombre").value.trim(),
+      cargo: $("cargo").value.trim(),
+      fecha: $("fecha").value,
+      punto: $("punto").value.trim(),
+      material: $("material").value.trim(),
+      cantidad: $("cantidad").value,
       foto: archivoFoto ? await comprimir(archivoFoto) : null
     };
-    try{
+
+    try {
       await enviar(data);
-      msg.className="ok"; msg.textContent="Registro guardado correctamente.";
-    }catch(err){
+      msg.className = "ok";
+      msg.textContent = "Registro guardado correctamente.";
+    } catch (err) {
       console.error(err);
       setQ([...getQ(), data]);
-      msg.className="err"; msg.textContent="No se pudo enviar: quedó guardado en este dispositivo y se reintentará.";
+      msg.className = "err";
+      msg.textContent = "No se pudo enviar: quedó guardado en este dispositivo y se reintentará.";
     }
-    $("punto").value=""; $("material").value=""; $("cantidad").value="";
-    $("foto").value=""; $("preview").style.display="none";
-  }catch(err){
-    msg.className="err"; msg.textContent="No se pudo procesar la foto. Inténtalo de nuevo.";
+
+    $("punto").value = "";
+    $("material").value = "";
+    $("cantidad").value = "";
+    $("foto").value = "";
+    $("preview").style.display = "none";
+
+  } catch (err) {
+    msg.className = "err";
+    msg.textContent = "No se pudo procesar la foto.";
   }
+
   btn.disabled = false;
 });
+  
+
+
 
 /* ---------- Inicio ---------- */
 showPend();
