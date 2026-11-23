@@ -152,7 +152,7 @@ async function enviar(d){
 
 /* esto es de inventrario actual*/
 
-const respInv = await fetch(urlInventario);
+const respInv = await fetch(CONFIG.urlInventario);
 const invRows = await respInv.json();
 
 CAT.materiales =
