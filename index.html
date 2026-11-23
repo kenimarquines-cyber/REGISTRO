@@ -83,6 +83,7 @@
 /* ===== CONFIGURACIÓN: pega aquí las 2 URL de tus flujos de Power Automate ===== */
 const CONFIG = {
   urlMaestros: "https://defaultc69af4b4d53d465abdcf7041701dc8.79.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/17/workflows/bb0175226c5e41519e399294c61e120b/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=4ZPL-gSDnrGlWpe2tE5-O57IhMUsn2gwhB4EYPBHDo8",
+  urlInventario: "",
   urlGuardar: "https://defaultc69af4b4d53d465abdcf7041701dc8.79.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/18/workflows/c50ea28f6e3e4af7885b3bc04e7232c0/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=TvFPIRj-1Lm-KFZ6ojyOCkWzF0HbNIeJHXU9r40iRfI"
 };
 /* ========================================================================== */
@@ -90,7 +91,14 @@ const CONFIG = {
 const $ = id => document.getElementById(id);
 const norm = t => String(t).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim();
 const QKEY = "registros_pendientes", CKEY = "catalogo";
-let CAT = {nombres:[], cargos:[], puntos:[], materiales:[]};
+let CAT = {
+  nombres: rows.map(x=>({
+      n: val(x,"NOMBRE COMPLETO"),
+      c: val(x,"CARGO")
+  })),
+  cargos: uniq(rows.map(x=>val(x,"CARGO"))),
+  puntos: uniq(rows.map(x=>val(x,"PUNTO_VENTA")))
+};
 try{ CAT = JSON.parse(localStorage.getItem(CKEY)) || CAT; }catch(e){}
 
 /* ---------- Lee Tbl_Maestros ---------- */
@@ -104,8 +112,8 @@ async function cargarCatalogo(){
     CAT = {
       nombres: rows.map(x=>({n:val(x,"Nombre"), c:val(x,"Cargo")})).filter(x=>x.n),
       cargos: uniq(rows.map(x=>val(x,"Cargo"))),
-      puntos: uniq(rows.map(x=>val(x,"Punto de venta"))),
-      materiales: uniq(rows.map(x=>val(x,"Material")))
+      puntos: uniq(rows.map(x=>val(x,"Punto de venta")))
+      
     };
     try{ localStorage.setItem(CKEY, JSON.stringify(CAT)); }catch(e){}
   }catch(e){ console.error("Maestros:", e); }
@@ -211,6 +219,17 @@ async function reenviarPendientes(){
   for(const d of getQ()){ try{ await enviar(d); }catch(e){ resto.push(d); } }
   setQ(resto);
 }
+/* esto es de inventrario actual*/
+
+const respInv = await fetch(urlInventario);
+const invRows = await respInv.json();
+
+CAT.materiales =
+[
+  ...new Set(
+    invRows.map(x => x.MATERIAL)
+  )
+];
 
 
 /* ---------- Formulario ---------- */
