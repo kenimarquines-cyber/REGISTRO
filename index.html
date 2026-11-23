@@ -84,8 +84,8 @@
 const CONFIG = {
   urlMaestros: "https://defaultc69af4b4d53d465abdcf7041701dc8.79.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/17/workflows/bb0175226c5e41519e399294c61e120b/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=4ZPL-gSDnrGlWpe2tE5-O57IhMUsn2gwhB4EYPBHDo8",
   urlInventario: "https://defaultc69af4b4d53d465abdcf7041701dc8.79.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/19/workflows/f1bb503bd8e74c8380b1d3a20610edbc/triggers/manual/paths/invoke?api-version=1",
-  urlGuardar: "https://defaultc69af4b4d53d465abdcf7041701dc8.79.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/24/workflows/881742e85991488297fd0822346a06bc/triggers/manual/paths/invoke?api-version=1",
-  urlGuardar: "https://defaultc69af4b4d53d465abdcf7041701dc8.79.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/18/workflows/c50ea28f6e3e4af7885b3bc04e7232c0/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=TvFPIRj-1Lm-KFZ6ojyOCkWzF0HbNIeJHXU9r40iRfI"
+  urlGuardar: "https://defaultc69af4b4d53d465abdcf7041701dc8.79.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/18/workflows/c50ea28f6e3e4af7885b3bc04e7232c0/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=TvFPIRj-1Lm-KFZ6ojyOCkWzF0HbNIeJHXU9r40iRfI",
+  urlIngresos: "https://defaultc69af4b4d53d465abdcf7041701dc8.79.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/24/workflows/881742e85991488297fd0822346a06bc/triggers/manual/paths/invoke?api-version=1"
 };
 /* ========================================================================== */
 
@@ -112,6 +112,15 @@ try {
   CAT = JSON.parse(localStorage.getItem(CKEY)) || CAT;
 } catch (e) {}
 
+const val = (row, n) => {
+  const k = Object.keys(row).find(
+    k => norm(k) === norm(n)
+  );
+  return k ? String(row[k] ?? "").trim() : "";
+};
+
+const uniq = a => [...new Set(a.filter(Boolean))];
+
 /* ---------- Lee Tbl_Maestros ---------- */
 async function cargarCatalogo() {
   try {
@@ -124,15 +133,6 @@ async function cargarCatalogo() {
     if (!r.ok) throw new Error(r.status);
 
     const rows = await r.json();
-
-    const val = (row, n) => {
-      const k = Object.keys(row).find(
-        k => norm(k) === norm(n)
-      );
-      return k ? String(row[k] ?? "").trim() : "";
-    };
-
-    const uniq = a => [...new Set(a.filter(Boolean))];
 
     CAT.nombres = rows
       .map(x => ({
@@ -193,19 +193,40 @@ async function enviar(d){
 }
 
 /* esto es de inventrario actual*/
+async function cargarInventario() {
+  try {
+    const respInv = await fetch(CONFIG.urlInventario, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: "{}"
+    });
 
-const respInv = await fetch(CONFIG.urlInventario);
-const invRows = await respInv.json();
+    if (!respInv.ok) throw new Error("HTTP " + respInv.status);
 
-CAT.materiales =
-[
-  ...new Set(
-    invRows.map(x => x.MATERIAL)
-  )
-];
+    const rawInv = await respInv.json();
+    const invRows = Array.isArray(rawInv)
+      ? rawInv
+      : (Array.isArray(rawInv?.body) ? rawInv.body : (Array.isArray(rawInv?.value) ? rawInv.value : []));
 
-console.log("Inventario:", invRows);
-console.log("Materiales:", CAT.materiales);
+    CAT.materiales = uniq(
+      invRows.map(x => val(x, "Material"))
+    );
+
+    try {
+      localStorage.setItem(
+        CKEY,
+        JSON.stringify(CAT)
+      );
+    } catch (e) {}
+
+    console.log("Inventario:", invRows);
+    console.log("Materiales:", CAT.materiales);
+  } catch (e) {
+    console.error("Inventario:", e);
+  }
+}
 
 /* ---------- Autocompletado ---------- */
 function autocompletar(input, fuente, alElegir){
@@ -336,7 +357,7 @@ $("form").addEventListener("submit", async e=>{
 
 /* ---------- Inicio ---------- */
 showPend();
-cargarCatalogo().then(reenviarPendientes);
+Promise.all([cargarCatalogo(), cargarInventario()]).then(reenviarPendientes);
 window.addEventListener("online", reenviarPendientes);
 </script>
 </body>
