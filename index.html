@@ -89,34 +89,75 @@ const CONFIG = {
 /* ========================================================================== */
 
 const $ = id => document.getElementById(id);
-const norm = t => String(t).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim();
-const QKEY = "registros_pendientes", CKEY = "catalogo";
+
+const norm = t =>
+  String(t)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+
+const QKEY = "registros_pendientes";
+const CKEY = "catalogo";
+
 let CAT = {
-  nombres: rows.map(x=>({
-      n: val(x,"NOMBRE COMPLETO"),
-      c: val(x,"CARGO")
-  })),
-  cargos: uniq(rows.map(x=>val(x,"CARGO"))),
-  puntos: uniq(rows.map(x=>val(x,"PUNTO_VENTA")))
+  nombres: [],
+  cargos: [],
+  puntos: [],
+  materiales: []
 };
-try{ CAT = JSON.parse(localStorage.getItem(CKEY)) || CAT; }catch(e){}
+
+try {
+  CAT = JSON.parse(localStorage.getItem(CKEY)) || CAT;
+} catch (e) {}
 
 /* ---------- Lee Tbl_Maestros ---------- */
-async function cargarCatalogo(){
-  try{
-    const r = await fetch(CONFIG.urlMaestros, {method:"POST", body:"{}"});
-    if(!r.ok) throw new Error(r.status);
+async function cargarCatalogo() {
+  try {
+
+    const r = await fetch(CONFIG.urlMaestros, {
+      method: "POST",
+      body: "{}"
+    });
+
+    if (!r.ok) throw new Error(r.status);
+
     const rows = await r.json();
-    const val = (row, n) => { const k = Object.keys(row).find(k=>norm(k)===norm(n)); return k ? String(row[k]??"").trim() : ""; };
-    const uniq = a => [...new Set(a.filter(Boolean))];
-    CAT = {
-      nombres: rows.map(x=>({n:val(x,"Nombre"), c:val(x,"Cargo")})).filter(x=>x.n),
-      cargos: uniq(rows.map(x=>val(x,"Cargo"))),
-      puntos: uniq(rows.map(x=>val(x,"Punto de venta")))
-      
+
+    const val = (row, n) => {
+      const k = Object.keys(row).find(
+        k => norm(k) === norm(n)
+      );
+      return k ? String(row[k] ?? "").trim() : "";
     };
-    try{ localStorage.setItem(CKEY, JSON.stringify(CAT)); }catch(e){}
-  }catch(e){ console.error("Maestros:", e); }
+
+    const uniq = a => [...new Set(a.filter(Boolean))];
+
+    CAT.nombres = rows
+      .map(x => ({
+        n: val(x, "NOMBRE COMPLETO"),
+        c: val(x, "CARGO")
+      }))
+      .filter(x => x.n);
+
+    CAT.cargos = uniq(
+      rows.map(x => val(x, "CARGO"))
+    );
+
+    CAT.puntos = uniq(
+      rows.map(x => val(x, "PUNTO_VENTA"))
+    );
+
+    try {
+      localStorage.setItem(
+        CKEY,
+        JSON.stringify(CAT)
+      );
+    } catch (e) {}
+
+  } catch (e) {
+    console.error("Maestros:", e);
+  }
 }
 
 /* ---------- Guarda en Tbl_Registros (vía flujo) ---------- */
@@ -161,6 +202,9 @@ CAT.materiales =
     invRows.map(x => x.MATERIAL)
   )
 ];
+
+console.log("Inventario:", invRows);
+console.log("Materiales:", CAT.materiales);
 
 /* ---------- Autocompletado ---------- */
 function autocompletar(input, fuente, alElegir){
