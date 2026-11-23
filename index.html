@@ -92,7 +92,7 @@ const CONFIG = {
 const $ = id => document.getElementById(id);
 
 const norm = t =>
-  String(t)
+  String(t ?? "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
@@ -109,55 +109,66 @@ let CAT = {
 };
 
 try {
-  CAT = JSON.parse(localStorage.getItem(CKEY)) || CAT;
+  CAT = Object.assign(CAT, JSON.parse(localStorage.getItem(CKEY)) || {});
 } catch (e) {}
 
-const val = (row, n) => {
+const val = (row, ...names) => {
   if (!row || typeof row !== "object") return "";
-  const k = Object.keys(row).find(
-    k => norm(k) === norm(n)
-  );
-  return k ? String(row[k] ?? "").trim() : "";
+  for (const n of names) {
+    const k = Object.keys(row).find(
+      key => norm(key) === norm(n)
+    );
+    if (k) {
+      const v = String(row[k] ?? "").trim();
+      if (v) return v;
+    }
+  }
+  return "";
 };
 
-const uniq = a => [...new Set(a.filter(Boolean))];
+const uniq = a => [...new Set(a.map(x => String(x ?? "").trim()).filter(Boolean))];
 
-/* ---------- Lee Tbl_Maestros ---------- */
+function extraerFilas(raw) {
+  if (Array.isArray(raw)) return raw;
+  if (Array.isArray(raw?.body)) return raw.body;
+  if (Array.isArray(raw?.value)) return raw.value;
+  return [];
+}
+
+/* ---------- Lee Tbl_Maestros / Data ---------- */
 async function cargarCatalogo() {
   try {
-
     const r = await fetch(CONFIG.urlMaestros, {
       method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: "{}"
     });
 
-    if (!r.ok) throw new Error(r.status);
+    if (!r.ok) throw new Error("HTTP " + r.status);
 
-    const data = await r.json();
-    const rows = Array.isArray(data) ? data : (Array.isArray(data?.value) ? data.value : []);
+    const raw = await r.json();
+    const rows = extraerFilas(raw);
 
-    CAT.nombres = rows
+    const nombres = rows
       .map(x => ({
-        n: val(x, "NOMBRE COMPLETO"),
+        n: val(x, "NOMBRE COMPLETO", "NOMBRE"),
         c: val(x, "CARGO")
       }))
       .filter(x => x.n);
 
-    CAT.cargos = uniq(
-      rows.map(x => val(x, "CARGO"))
-    );
+    const cargos = uniq(rows.map(x => val(x, "CARGO")));
+    const puntos = uniq(rows.map(x => val(x, "PUNTO_VENTA", "PUNTO DE VENTA", "PUNTO")));
 
-    CAT.puntos = uniq(
-      rows.map(x => val(x, "PUNTO_VENTA"))
-    );
+    if (nombres.length) CAT.nombres = nombres;
+    if (cargos.length) CAT.cargos = cargos;
+    if (puntos.length) CAT.puntos = puntos;
+
+    console.log("Maestros filas:", rows);
+    console.log("Nombres:", CAT.nombres.length, "Puntos:", CAT.puntos.length);
 
     try {
-      localStorage.setItem(
-        CKEY,
-        JSON.stringify(CAT)
-      );
+      localStorage.setItem(CKEY, JSON.stringify(CAT));
     } catch (e) {}
-
   } catch (e) {
     console.error("Maestros:", e);
   }
@@ -208,20 +219,18 @@ async function cargarInventario() {
     if (!respInv.ok) throw new Error("HTTP " + respInv.status);
 
     const rawInv = await respInv.json();
-    const invRows = Array.isArray(rawInv)
-      ? rawInv
-      : (Array.isArray(rawInv?.body) ? rawInv.body : (Array.isArray(rawInv?.value) ? rawInv.value : []));
+    const invRows = extraerFilas(rawInv);
 
-    CAT.materiales = uniq(
-      invRows.map(x => val(x, "Material"))
+    const materiales = uniq(
+      invRows.map(x => val(x, "Material", "MATERIAL"))
     );
 
-    try {
-      localStorage.setItem(
-        CKEY,
-        JSON.stringify(CAT)
-      );
-    } catch (e) {}
+    if (materiales.length) {
+      CAT.materiales = materiales;
+      try {
+        localStorage.setItem(CKEY, JSON.stringify(CAT));
+      } catch (e) {}
+    }
 
     console.log("Inventario:", invRows);
     console.log("Materiales:", CAT.materiales);
