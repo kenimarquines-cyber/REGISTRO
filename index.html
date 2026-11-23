@@ -80,12 +80,12 @@
 </main>
 
 <script>
-/* ===== CONFIGURACIÓN: pega aquí las 2 URL de tus flujos de Power Automate ===== */
+/* ===== CONFIGURACIÓN: URLs de tus flujos de Power Automate ===== */
 const CONFIG = {
   urlMaestros: "https://defaultc69af4b4d53d465abdcf7041701dc8.79.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/17/workflows/bb0175226c5e41519e399294c61e120b/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=4ZPL-gSDnrGlWpe2tE5-O57IhMUsn2gwhB4EYPBHDo8",
   urlInventario: "https://defaultc69af4b4d53d465abdcf7041701dc8.79.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/19/workflows/f1bb503bd8e74c8380b1d3a20610edbc/triggers/manual/paths/invoke?api-version=1",
-  urlGuardar: "https://defaultc69af4b4d53d465abdcf7041701dc8.79.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/18/workflows/c50ea28f6e3e4af7885b3bc04e7232c0/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=TvFPIRj-1Lm-KFZ6ojyOCkWzF0HbNIeJHXU9r40iRfI",
-  urlIngresos: "https://defaultc69af4b4d53d465abdcf7041701dc8.79.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/24/workflows/881742e85991488297fd0822346a06bc/triggers/manual/paths/invoke?api-version=1"
+  urlIngresos: "https://defaultc69af4b4d53d465abdcf7041701dc8.79.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/24/workflows/881742e85991488297fd0822346a06bc/triggers/manual/paths/invoke?api-version=1",
+  urlGuardar: "https://defaultc69af4b4d53d465abdcf7041701dc8.79.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/18/workflows/c50ea28f6e3e4af7885b3bc04e7232c0/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=TvFPIRj-1Lm-KFZ6ojyOCkWzF0HbNIeJHXU9r40iRfI"
 };
 /* ========================================================================== */
 
@@ -113,6 +113,7 @@ try {
 } catch (e) {}
 
 const val = (row, n) => {
+  if (!row || typeof row !== "object") return "";
   const k = Object.keys(row).find(
     k => norm(k) === norm(n)
   );
@@ -132,7 +133,8 @@ async function cargarCatalogo() {
 
     if (!r.ok) throw new Error(r.status);
 
-    const rows = await r.json();
+    const data = await r.json();
+    const rows = Array.isArray(data) ? data : (Array.isArray(data?.value) ? data.value : []);
 
     CAT.nombres = rows
       .map(x => ({
@@ -192,7 +194,7 @@ async function enviar(d){
   if(!r.ok) throw new Error("HTTP "+r.status);
 }
 
-/* esto es de inventrario actual*/
+/* ---------- Lee Inventario Actual (tblInventarioActual) ---------- */
 async function cargarInventario() {
   try {
     const respInv = await fetch(CONFIG.urlInventario, {
@@ -298,8 +300,6 @@ async function reenviarPendientes(){
   setQ(resto);
 }
 
-
-
 /* ---------- Formulario ---------- */
 $("fecha").valueAsDate = new Date();
 $("form").addEventListener("submit", async e=>{
@@ -351,9 +351,6 @@ $("form").addEventListener("submit", async e=>{
 
   btn.disabled = false;
 });
-  
-
-
 
 /* ---------- Inicio ---------- */
 showPend();
