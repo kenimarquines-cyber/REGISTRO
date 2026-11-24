@@ -262,6 +262,8 @@ function autocompletar(input, fuente, alElegir){
   ["pointerup","pointercancel"].forEach(ev=>list.addEventListener(ev, ()=>setTimeout(()=>{ tocando = false; }, 400)));
   input.addEventListener("input", mostrar);
   input.addEventListener("focus", mostrar);
+  input.addEventListener("click", mostrar);
+  input.addEventListener("touchstart", mostrar);
   input.addEventListener("blur", ()=>setTimeout(()=>{ if(!tocando) list.style.display="none"; },150));
 }
 autocompletar($("nombre"), ()=>CAT.nombres.map(x=>({t:x.n,s:x.c,c:x.c})), i=>{ if(i.c) $("cargo").value=i.c; });
