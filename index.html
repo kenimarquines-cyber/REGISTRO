@@ -219,7 +219,7 @@ async function cargarInventario() {
     if (!respInv.ok) throw new Error("HTTP " + respInv.status);
 
     const rawInv = await respInv.json();
-    const invRows = extraerFilas(rawInv);
+    const invRows = rawInv;
 
     const materiales = uniq(
       invRows.map(x => val(x, "Material", "MATERIAL"))
