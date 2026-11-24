@@ -232,7 +232,7 @@ async function cargarInventario() {
       } catch (e) {}
     }
 
-    console.log("Inventario:", invRows);
+    console.log("Inventario completo:", JSON.stringify(invRows, null, 2));
     console.log("Materiales:", CAT.materiales);
   } catch (e) {
     console.error("Inventario:", e);
